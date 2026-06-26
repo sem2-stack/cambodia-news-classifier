@@ -45,12 +45,7 @@ CATEGORY_COLORS = {
 # ============================================================================
 st.markdown("""
     <style>
-    /* Main container */
-    .main {
-        padding: 0;
-    }
-    
-    /* Header styling */
+    .main { padding: 0; }
     .header-container {
         background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
         padding: 20px 30px;
@@ -58,21 +53,8 @@ st.markdown("""
         border-bottom: 3px solid #0f172a;
         margin-bottom: 30px;
     }
-    
-    .header-title {
-        font-size: 28px;
-        font-weight: bold;
-        margin: 0;
-    }
-    
-    .header-subtitle {
-        font-size: 12px;
-        color: #e0e7ff;
-        margin: 5px 0 0 0;
-        letter-spacing: 1px;
-    }
-    
-    /* Input section */
+    .header-title { font-size: 28px; font-weight: bold; margin: 0; }
+    .header-subtitle { font-size: 12px; color: #e0e7ff; margin: 5px 0 0 0; letter-spacing: 1px; }
     .input-section {
         background: white;
         padding: 25px;
@@ -80,22 +62,8 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         margin-bottom: 20px;
     }
-    
-    .input-label {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 15px;
-        color: #1e293b;
-    }
-    
-    .input-sublabel {
-        font-size: 12px;
-        color: #64748b;
-        margin-top: -10px;
-        margin-bottom: 15px;
-    }
-    
-    /* Results panel */
+    .input-label { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; }
+    .input-sublabel { font-size: 12px; color: #64748b; margin-top: -10px; margin-bottom: 15px; }
     .results-panel {
         background: white;
         padding: 25px;
@@ -103,54 +71,13 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         border-left: 4px solid #3b82f6;
     }
-    
-    .results-title {
-        font-size: 20px;
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #1e293b;
-    }
-    
-    .results-subtitle {
-        font-size: 13px;
-        color: #64748b;
-        margin-bottom: 20px;
-    }
-    
-    /* Empty state */
-    .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        color: #94a3b8;
-    }
-    
-    .empty-icon {
-        font-size: 48px;
-        margin-bottom: 15px;
-    }
-    
-    /* Features list */
-    .features-list {
-        background: #f8fafc;
-        padding: 15px;
-        border-radius: 8px;
-        margin-top: 20px;
-    }
-    
-    .feature-item {
-        display: flex;
-        align-items: center;
-        padding: 8px 0;
-        color: #0f766e;
-        font-size: 13px;
-    }
-    
-    .feature-icon {
-        margin-right: 10px;
-        color: #14b8a6;
-    }
-    
-    /* Metric cards */
+    .results-title { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #1e293b; }
+    .results-subtitle { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+    .empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; }
+    .empty-icon { font-size: 48px; margin-bottom: 15px; }
+    .features-list { background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 20px; }
+    .feature-item { display: flex; align-items: center; padding: 8px 0; color: #0f766e; font-size: 13px; }
+    .feature-icon { margin-right: 10px; color: #14b8a6; }
     .metric-card {
         background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
         padding: 20px;
@@ -158,22 +85,8 @@ st.markdown("""
         text-align: center;
         border: 1px solid #bae6fd;
     }
-    
-    .metric-value {
-        font-size: 28px;
-        font-weight: bold;
-        color: #0369a1;
-        margin: 10px 0;
-    }
-    
-    .metric-label {
-        font-size: 12px;
-        color: #0c4a6e;
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
-    
-    /* Buttons */
+    .metric-value { font-size: 28px; font-weight: bold; color: #0369a1; margin: 10px 0; }
+    .metric-label { font-size: 12px; color: #0c4a6e; font-weight: 600; margin-bottom: 5px; }
     .stButton > button {
         width: 100%;
         height: 50px;
@@ -186,34 +99,10 @@ st.markdown("""
         cursor: pointer;
         transition: all 0.3s ease;
     }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-    }
-    
-    .stButton > button:active {
-        transform: translateY(0px);
-    }
-    
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 20px;
-        border-bottom: 2px solid #e2e8f0;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        padding: 10px 0;
-        color: #64748b;
-        font-weight: 500;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        color: #3b82f6;
-        border-bottom: 3px solid #3b82f6;
-    }
-    
-    /* Text area */
+    .stButton > button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+    .stTabs [data-baseweb="tab-list"] { gap: 20px; border-bottom: 2px solid #e2e8f0; }
+    .stTabs [data-baseweb="tab"] { padding: 10px 0; color: #64748b; font-weight: 500; }
+    .stTabs [aria-selected="true"] { color: #3b82f6; border-bottom: 3px solid #3b82f6; }
     .stTextArea textarea {
         border-radius: 8px;
         border: 1px solid #cbd5e1;
@@ -221,52 +110,9 @@ st.markdown("""
         font-size: 14px;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    
-    .stTextArea textarea:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-    
-    /* Spinner */
-    .stSpinner {
-        color: #3b82f6;
-    }
-    
-    /* Success/Error messages */
-    .stSuccess {
-        background-color: #f0fdf4;
-        border-left: 4px solid #22c55e;
-        color: #15803d;
-    }
-    
-    .stError {
-        background-color: #fef2f2;
-        border-left: 4px solid #ef4444;
-        color: #991b1b;
-    }
-    
-    .stInfo {
-        background-color: #f0f9ff;
-        border-left: 4px solid #0284c7;
-        color: #082f49;
-    }
-    
-    /* Chart styling */
-    .stBar {
-        border-radius: 8px;
-    }
-    
-    /* Footer */
-    .footer {
-        text-align: center;
-        padding: 30px;
-        color: #94a3b8;
-        font-size: 12px;
-        border-top: 1px solid #e2e8f0;
-        margin-top: 40px;
-    }
-    
-    /* Category badge */
+    .stTextArea textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    .stSuccess { background-color: #f0fdf4; border-left: 4px solid #22c55e; color: #15803d; }
+    .stError { background-color: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; }
     .category-badge {
         display: inline-block;
         padding: 4px 12px;
@@ -275,8 +121,6 @@ st.markdown("""
         font-weight: 600;
         color: white;
     }
-    
-    /* Top category card */
     .top-category-card {
         background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
         padding: 25px;
@@ -285,27 +129,9 @@ st.markdown("""
         border: 2px solid #3b82f6;
         margin-bottom: 20px;
     }
-    
-    .top-category-label {
-        font-size: 14px;
-        color: #64748b;
-        font-weight: 500;
-    }
-    
-    .top-category-name {
-        font-size: 32px;
-        font-weight: bold;
-        color: #1e293b;
-        margin: 10px 0;
-    }
-    
-    .top-category-confidence {
-        font-size: 18px;
-        color: #3b82f6;
-        font-weight: 600;
-    }
-    
-    /* History stats */
+    .top-category-label { font-size: 14px; color: #64748b; font-weight: 500; }
+    .top-category-name { font-size: 32px; font-weight: bold; color: #1e293b; margin: 10px 0; }
+    .top-category-confidence { font-size: 18px; color: #3b82f6; font-weight: 600; }
     .history-stat-card {
         background: white;
         padding: 15px;
@@ -313,24 +139,9 @@ st.markdown("""
         border: 1px solid #e2e8f0;
         text-align: center;
     }
-    
-    .history-stat-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: #1e293b;
-    }
-    
-    .history-stat-label {
-        font-size: 12px;
-        color: #94a3b8;
-    }
-    
-    .history-stat-sub {
-        font-size: 11px;
-        color: #94a3b8;
-    }
-    
-    /* Session history item */
+    .history-stat-value { font-size: 24px; font-weight: bold; color: #1e293b; }
+    .history-stat-label { font-size: 12px; color: #94a3b8; }
+    .history-stat-sub { font-size: 11px; color: #94a3b8; }
     .history-item {
         background: white;
         padding: 15px;
@@ -338,24 +149,9 @@ st.markdown("""
         border-left: 4px solid #3b82f6;
         margin-bottom: 10px;
     }
-    
-    .history-item-category {
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
-    
-    .history-item-text {
-        font-size: 14px;
-        color: #475569;
-        margin-bottom: 5px;
-    }
-    
-    .history-item-meta {
-        font-size: 12px;
-        color: #94a3b8;
-    }
-    
-    /* Confidence bar */
+    .history-item-category { font-weight: 600; margin-bottom: 5px; }
+    .history-item-text { font-size: 14px; color: #475569; margin-bottom: 5px; }
+    .history-item-meta { font-size: 12px; color: #94a3b8; }
     .confidence-bar {
         height: 8px;
         background: #e2e8f0;
@@ -363,11 +159,14 @@ st.markdown("""
         overflow: hidden;
         margin-top: 4px;
     }
-    
-    .confidence-bar-fill {
-        height: 100%;
-        border-radius: 4px;
-        transition: width 0.3s ease;
+    .confidence-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+    .footer {
+        text-align: center;
+        padding: 30px;
+        color: #94a3b8;
+        font-size: 12px;
+        border-top: 1px solid #e2e8f0;
+        margin-top: 40px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -501,7 +300,7 @@ st.markdown("""
 tab1, tab2, tab3 = st.tabs(["🤖 Classifier", "📊 Session History", "ℹ️ About"])
 
 # ============================================================================
-# TAB 1: CLASSIFIER
+# TAB 1: CLASSIFIER (FIXED VERSION)
 # ============================================================================
 with tab1:
     col_left, col_right = st.columns([1, 1], gap="large")
@@ -517,6 +316,9 @@ with tab1:
         
         tab_text, tab_pdf = st.tabs(["📝 Text Input", "📤 PDF Upload"])
         
+        # Initialize input_text
+        input_text = ""
+        
         with tab_text:
             st.caption("Direct Text Entry")
             st.caption("Perfect for copied articles or short texts")
@@ -524,12 +326,16 @@ with tab1:
                 "Direct Text Entry",
                 height=300,
                 placeholder="Paste your news article here ...\n\nThe government announced new economic policies today ...",
-                label_visibility="collapsed"
+                label_visibility="collapsed",
+                key="text_input_area"
             )
-            input_text = text_input
+            # Set input_text from text_input
+            if text_input and text_input.strip():
+                input_text = text_input
         
         with tab_pdf:
-            uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
+            uploaded_file = st.file_uploader("Choose a PDF file", type="pdf", key="pdf_uploader")
+            extracted_text = ""
             if uploaded_file is not None:
                 extracted_text = extract_text_from_pdf(uploaded_file)
                 if extracted_text:
@@ -541,11 +347,24 @@ with tab1:
             else:
                 input_text = ""
         
+        # Analyze button
         if st.button("🔍 Analyze Text", use_container_width=True, key="analyze_btn"):
-            if input_text.strip():
+            # Get the latest text from the text area
+            text_input = st.session_state.get("text_input_area", "")
+            
+            # Determine which input to use
+            final_text = ""
+            if text_input and text_input.strip():
+                final_text = text_input
+            elif 'uploaded_file' in locals() and uploaded_file is not None and extracted_text:
+                final_text = extracted_text
+            
+            if not final_text or not final_text.strip():
+                st.error("❌ Please enter a news article to analyze")
+            else:
                 with st.spinner("⏳ Analyzing article..."):
                     pred_class, pred_name, pred_conf, probs = classify_text(
-                        input_text,
+                        final_text,
                         model,
                         tokenizer,
                         device
@@ -557,16 +376,17 @@ with tab1:
                     'category_name': pred_name,
                     'confidence': pred_conf,
                     'probs': probs,
-                    'text': input_text,
-                    'text_length': len(input_text),
-                    'word_count': len(input_text.split()),
+                    'text': final_text,
+                    'text_length': len(final_text),
+                    'word_count': len(final_text.split()),
                     'timestamp': datetime.now().strftime("%I:%M %p")
                 }
                 
                 # Add to history
                 st.session_state.history.append(st.session_state.last_prediction)
-            else:
-                st.error("❌ Please enter a news article to analyze")
+                
+                st.success("✅ Analysis complete!")
+                st.rerun()
     
     # RIGHT COLUMN - RESULTS PANEL
     with col_right:
@@ -606,7 +426,6 @@ with tab1:
             # Confidence Scores
             st.subheader("Confidence Scores")
             
-            # Sort by confidence
             probs_list = [(CATEGORY_NAMES.get(i, f"Class {i}"), float(p)) for i, p in enumerate(prediction['probs'][0].tolist())]
             probs_list.sort(key=lambda x: x[1], reverse=True)
             
@@ -628,7 +447,6 @@ with tab1:
             col_exp, col_clr = st.columns(2)
             with col_exp:
                 if st.button("📤 Export", use_container_width=True):
-                    # Create export data
                     export_data = {
                         'Category': prediction['category_name'],
                         'Confidence': prediction['confidence'],
@@ -679,7 +497,6 @@ with tab2:
         </div>
     """, unsafe_allow_html=True)
     
-    # Stats
     if st.session_state.history:
         total_articles = len(st.session_state.history)
         categories_used = len(set(h['category_name'] for h in st.session_state.history))
@@ -722,7 +539,6 @@ with tab2:
         
         st.markdown("---")
         
-        # Search and filters
         col_search, col_filter, col_sort = st.columns([2, 1, 1])
         with col_search:
             search_query = st.text_input("🔍 Search articles...", placeholder="Search by category or text...")
@@ -731,7 +547,6 @@ with tab2:
         with col_sort:
             sort_order = st.selectbox("Sort by", ["Most Recent", "Most Confident", "Oldest"])
         
-        # Filter and sort history
         filtered_history = st.session_state.history.copy()
         
         if search_query:
@@ -746,13 +561,10 @@ with tab2:
             filtered_history = filtered_history[::-1]
         elif sort_order == "Most Confident":
             filtered_history = sorted(filtered_history, key=lambda x: x['confidence'], reverse=True)
-        elif sort_order == "Oldest":
-            filtered_history = filtered_history
         
         st.markdown(f"### {len(filtered_history)} articles")
         
-        # Display history items
-        for idx, item in enumerate(filtered_history):
+        for item in filtered_history:
             color = CATEGORY_COLORS.get(item['category_name'], '#3b82f6')
             st.markdown(f"""
                 <div class="history-item" style="border-left-color: {color};">
@@ -768,7 +580,6 @@ with tab2:
                 </div>
             """, unsafe_allow_html=True)
         
-        # Clear history button
         if st.button("🗑️ Clear All History", use_container_width=True):
             st.session_state.history = []
             st.rerun()
