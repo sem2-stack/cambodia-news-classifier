@@ -1,6 +1,8 @@
+# FORCE REBUILD - v2
 import streamlit as st
 import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch.nn as nn
+from transformers import AutoTokenizer, RobertaModel
 from huggingface_hub import hf_hub_download
 import PyPDF2
 from io import BytesIO
@@ -17,16 +19,51 @@ st.set_page_config(
 )
 
 # ============================================================================
+# CATEGORY NAMES - UPDATE THESE WITH YOUR ACTUAL CATEGORIES
+# ============================================================================
+CATEGORY_NAMES = {
+    0: "Politics",
+    1: "Economy", 
+    2: "Sports",
+    3: "Technology",
+    4: "Health",
+    5: "Entertainment"
+}
+
+# ============================================================================
+# CUSTOM MODEL CLASS - MATCHES YOUR SAVED ARCHITECTURE
+# ============================================================================
+class CustomRobertaForSequenceClassification(nn.Module):
+    """Custom RoBERTa model with classifier head matching the saved checkpoint"""
+    def __init__(self, base_model, num_labels=6, hidden_size=512):
+        super().__init__()
+        self.roberta = base_model
+        self.num_labels = num_labels
+        self.classifier = nn.Sequential(
+            nn.Linear(768, hidden_size),  # roberta-base has 768 dims -> 512 hidden
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(hidden_size, num_labels)  # 512 hidden -> num_labels
+        )
+    
+    def forward(self, input_ids, attention_mask=None):
+        # Get RoBERTa outputs
+        outputs = self.roberta(
+            input_ids=input_ids,
+            attention_mask=attention_mask
+        )
+        # Use pooled output (CLS token)
+        pooled_output = outputs.pooler_output
+        # Apply classifier
+        logits = self.classifier(pooled_output)
+        return type('obj', (object,), {'logits': logits})()
+
+# ============================================================================
 # CUSTOM CSS STYLING
 # ============================================================================
 st.markdown("""
     <style>
-    /* Main container */
-    .main {
-        padding: 0;
-    }
-    
-    /* Header styling */
+    .main { padding: 0; }
     .header-container {
         background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
         padding: 20px 30px;
@@ -34,21 +71,8 @@ st.markdown("""
         border-bottom: 3px solid #0f172a;
         margin-bottom: 30px;
     }
-    
-    .header-title {
-        font-size: 28px;
-        font-weight: bold;
-        margin: 0;
-    }
-    
-    .header-subtitle {
-        font-size: 12px;
-        color: #e0e7ff;
-        margin: 5px 0 0 0;
-        letter-spacing: 1px;
-    }
-    
-    /* Input section */
+    .header-title { font-size: 28px; font-weight: bold; margin: 0; }
+    .header-subtitle { font-size: 12px; color: #e0e7ff; margin: 5px 0 0 0; letter-spacing: 1px; }
     .input-section {
         background: white;
         padding: 25px;
@@ -56,22 +80,8 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         margin-bottom: 20px;
     }
-    
-    .input-label {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 15px;
-        color: #1e293b;
-    }
-    
-    .input-sublabel {
-        font-size: 12px;
-        color: #64748b;
-        margin-top: -10px;
-        margin-bottom: 15px;
-    }
-    
-    /* Results panel */
+    .input-label { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #1e293b; }
+    .input-sublabel { font-size: 12px; color: #64748b; margin-top: -10px; margin-bottom: 15px; }
     .results-panel {
         background: white;
         padding: 25px;
@@ -79,54 +89,13 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         border-left: 4px solid #3b82f6;
     }
-    
-    .results-title {
-        font-size: 20px;
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #1e293b;
-    }
-    
-    .results-subtitle {
-        font-size: 13px;
-        color: #64748b;
-        margin-bottom: 20px;
-    }
-    
-    /* Empty state */
-    .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        color: #94a3b8;
-    }
-    
-    .empty-icon {
-        font-size: 48px;
-        margin-bottom: 15px;
-    }
-    
-    /* Features list */
-    .features-list {
-        background: #f8fafc;
-        padding: 15px;
-        border-radius: 8px;
-        margin-top: 20px;
-    }
-    
-    .feature-item {
-        display: flex;
-        align-items: center;
-        padding: 8px 0;
-        color: #0f766e;
-        font-size: 13px;
-    }
-    
-    .feature-icon {
-        margin-right: 10px;
-        color: #14b8a6;
-    }
-    
-    /* Metric cards */
+    .results-title { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #1e293b; }
+    .results-subtitle { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+    .empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; }
+    .empty-icon { font-size: 48px; margin-bottom: 15px; }
+    .features-list { background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 20px; }
+    .feature-item { display: flex; align-items: center; padding: 8px 0; color: #0f766e; font-size: 13px; }
+    .feature-icon { margin-right: 10px; color: #14b8a6; }
     .metric-card {
         background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
         padding: 20px;
@@ -134,22 +103,8 @@ st.markdown("""
         text-align: center;
         border: 1px solid #bae6fd;
     }
-    
-    .metric-value {
-        font-size: 28px;
-        font-weight: bold;
-        color: #0369a1;
-        margin: 10px 0;
-    }
-    
-    .metric-label {
-        font-size: 12px;
-        color: #0c4a6e;
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
-    
-    /* Buttons */
+    .metric-value { font-size: 28px; font-weight: bold; color: #0369a1; margin: 10px 0; }
+    .metric-label { font-size: 12px; color: #0c4a6e; font-weight: 600; margin-bottom: 5px; }
     .stButton > button {
         width: 100%;
         height: 50px;
@@ -162,30 +117,13 @@ st.markdown("""
         cursor: pointer;
         transition: all 0.3s ease;
     }
-    
     .stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
     }
-    
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 20px;
-        border-bottom: 2px solid #e2e8f0;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        padding: 10px 0;
-        color: #64748b;
-        font-weight: 500;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        color: #3b82f6;
-        border-bottom: 3px solid #3b82f6;
-    }
-    
-    /* Text area */
+    .stTabs [data-baseweb="tab-list"] { gap: 20px; border-bottom: 2px solid #e2e8f0; }
+    .stTabs [data-baseweb="tab"] { padding: 10px 0; color: #64748b; font-weight: 500; }
+    .stTabs [aria-selected="true"] { color: #3b82f6; border-bottom: 3px solid #3b82f6; }
     .stTextArea textarea {
         border-radius: 8px;
         border: 1px solid #cbd5e1;
@@ -193,42 +131,10 @@ st.markdown("""
         font-size: 14px;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    
-    .stTextArea textarea:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-    
-    /* Spinner */
-    .stSpinner {
-        color: #3b82f6;
-    }
-    
-    /* Success/Error messages */
-    .stSuccess {
-        background-color: #f0fdf4;
-        border-left: 4px solid #22c55e;
-        color: #15803d;
-    }
-    
-    .stError {
-        background-color: #fef2f2;
-        border-left: 4px solid #ef4444;
-        color: #991b1b;
-    }
-    
-    .stInfo {
-        background-color: #f0f9ff;
-        border-left: 4px solid #0284c7;
-        color: #082f49;
-    }
-    
-    /* Chart styling */
-    .stBar {
-        border-radius: 8px;
-    }
-    
-    /* Footer */
+    .stTextArea textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    .stSuccess { background-color: #f0fdf4; border-left: 4px solid #22c55e; color: #15803d; }
+    .stError { background-color: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; }
+    .stInfo { background-color: #f0f9ff; border-left: 4px solid #0284c7; color: #082f49; }
     .footer {
         text-align: center;
         padding: 30px;
@@ -241,11 +147,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ============================================================================
-# LOAD MODEL - FIXED VERSION
+# LOAD MODEL
 # ============================================================================
 @st.cache_resource
 def load_model():
-    """Load RoBERTa model from HuggingFace Hub with key fixing"""
+    """Load the custom RoBERTa model from HuggingFace Hub"""
     
     # Check if model exists locally first
     model_path = "roberta_best.pt"
@@ -262,41 +168,29 @@ def load_model():
         # Load the state dict
         state_dict = torch.load(model_path, map_location="cpu")
         
-        # FIX KEY NAMES: replace 'encoder.' with 'roberta.'
-        new_state_dict = {}
+        # Fix key names: replace 'encoder.' with 'roberta.'
+        fixed_state_dict = {}
         for key, value in state_dict.items():
             if key.startswith("encoder."):
                 new_key = key.replace("encoder.", "roberta.", 1)
-                new_state_dict[new_key] = value
-            elif key.startswith("head."):
-                # Fix head keys to classifier keys
-                if "head.0" in key:
-                    new_key = key.replace("head.0", "classifier.dense")
-                    new_state_dict[new_key] = value
-                elif "head.3" in key:
-                    new_key = key.replace("head.3", "classifier.out_proj")
-                    new_state_dict[new_key] = value
-                else:
-                    new_state_dict[key] = value
+                fixed_state_dict[new_key] = value
             else:
-                new_state_dict[key] = value
+                fixed_state_dict[key] = value
         
-        # Get number of classes from the classifier
-        num_labels = 6  # default
-        if 'roberta.classifier.out_proj.weight' in new_state_dict:
-            num_labels = new_state_dict['roberta.classifier.out_proj.weight'].shape[0]
-        elif 'classifier.out_proj.weight' in new_state_dict:
-            num_labels = new_state_dict['classifier.out_proj.weight'].shape[0]
-        
-        # Load the model with the correct number of labels
+        # Load the base RoBERTa model
         tokenizer = AutoTokenizer.from_pretrained("roberta-base")
-        model = AutoModelForSequenceClassification.from_pretrained(
-            "roberta-base",
-            num_labels=num_labels
+        base_model = RobertaModel.from_pretrained("roberta-base")
+        
+        # Create custom model with 512 hidden size (matching the checkpoint)
+        num_labels = 6
+        model = CustomRobertaForSequenceClassification(
+            base_model, 
+            num_labels=num_labels, 
+            hidden_size=512  # This matches the checkpoint's classifier
         )
         
-        # Now load the fixed state dict
-        model.load_state_dict(new_state_dict, strict=False)
+        # Load the state dict (strict=False to ignore mismatches)
+        model.load_state_dict(fixed_state_dict, strict=False)
         model.to(device)
         model.eval()
         
@@ -320,7 +214,7 @@ def extract_text_from_pdf(pdf_file):
         return None
 
 def classify_text(text, model, tokenizer, device):
-    """Classify input text"""
+    """Classify input text and return category name"""
     inputs = tokenizer(
         text,
         return_tensors="pt",
@@ -335,8 +229,9 @@ def classify_text(text, model, tokenizer, device):
     
     pred_class = torch.argmax(probs, dim=1).item()
     pred_conf = probs[0, pred_class].item()
+    pred_name = CATEGORY_NAMES.get(pred_class, f"Class {pred_class}")
     
-    return pred_class, pred_conf, probs
+    return pred_class, pred_name, pred_conf, probs
 
 # ============================================================================
 # LOAD MODEL AT START
@@ -359,13 +254,13 @@ st.markdown("""
 nav_col1, nav_col2, nav_col3, nav_col4 = st.columns([1, 1, 1, 8])
 
 with nav_col1:
-    classifier_active = st.button("🤖 Classifier", use_container_width=True, key="nav_classifier")
+    st.button("🤖 Classifier", use_container_width=True, key="nav_classifier")
 
 with nav_col2:
-    history_active = st.button("📊 Session History", use_container_width=True, key="nav_history")
+    st.button("📊 Session History", use_container_width=True, key="nav_history")
 
 with nav_col3:
-    about_active = st.button("ℹ️ About", use_container_width=True, key="nav_about")
+    st.button("ℹ️ About", use_container_width=True, key="nav_about")
 
 st.markdown("---")
 
@@ -414,7 +309,7 @@ with col_left:
     if st.button("🔍 Analyze Text", use_container_width=True, key="analyze_btn"):
         if input_text.strip():
             with st.spinner("⏳ Analyzing article..."):
-                pred_class, pred_conf, probs = classify_text(
+                pred_class, pred_name, pred_conf, probs = classify_text(
                     input_text,
                     model,
                     tokenizer,
@@ -424,6 +319,7 @@ with col_left:
             # Store results in session state
             st.session_state.last_prediction = {
                 'class': pred_class,
+                'category_name': pred_name,
                 'confidence': pred_conf,
                 'probs': probs,
                 'text': input_text,
@@ -458,7 +354,7 @@ with col_right:
             st.markdown(f"""
                 <div class="metric-card">
                     <div class="metric-label">📌 PREDICTED CATEGORY</div>
-                    <div class="metric-value">Class {prediction['class']}</div>
+                    <div class="metric-value">{prediction['category_name']}</div>
                 </div>
             """, unsafe_allow_html=True)
         
@@ -473,7 +369,7 @@ with col_right:
         # Category probabilities
         st.subheader("Category Probabilities")
         prob_data = {
-            f"Class {i}": float(p) 
+            CATEGORY_NAMES.get(i, f"Class {i}"): float(p) 
             for i, p in enumerate(prediction['probs'][0].tolist())
         }
         st.bar_chart(prob_data)
