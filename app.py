@@ -267,6 +267,12 @@ def classify_text(text, model, tokenizer, device):
     
     pred_class = torch.argmax(probs, dim=1).item()
     pred_conf = probs[0, pred_class].item()
+    
+    # DEBUG: Print all probabilities
+    st.write("### Debug - Raw Probabilities:")
+    for i, p in enumerate(probs[0].tolist()):
+        st.write(f"Class {i}: {p:.1%}")
+    
     pred_name = CATEGORY_NAMES.get(pred_class, f"Class {pred_class}")
     
     return pred_class, pred_name, pred_conf, probs
