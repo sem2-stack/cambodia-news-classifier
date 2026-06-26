@@ -20,7 +20,7 @@ st.set_page_config(
 )
 
 # ============================================================================
-# CATEGORY NAMES - CORRECT MAPPING
+# CATEGORY NAMES
 # ============================================================================
 CATEGORY_NAMES = {
     0: "Politics",
@@ -78,15 +78,6 @@ st.markdown("""
     .features-list { background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 20px; }
     .feature-item { display: flex; align-items: center; padding: 8px 0; color: #0f766e; font-size: 13px; }
     .feature-icon { margin-right: 10px; color: #14b8a6; }
-    .metric-card {
-        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-        padding: 20px;
-        border-radius: 8px;
-        text-align: center;
-        border: 1px solid #bae6fd;
-    }
-    .metric-value { font-size: 28px; font-weight: bold; color: #0369a1; margin: 10px 0; }
-    .metric-label { font-size: 12px; color: #0c4a6e; font-weight: 600; margin-bottom: 5px; }
     .stButton > button {
         width: 100%;
         height: 50px;
@@ -119,8 +110,8 @@ st.markdown("""
         border: 2px solid #3b82f6;
         margin-bottom: 20px;
     }
-    .top-category-label { font-size: 14px; color: #64748b; font-weight: 500; }
-    .top-category-name { font-size: 32px; font-weight: bold; color: #1e293b; margin: 10px 0; }
+    .top-category-label { font-size: 14px; color: #64748b; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+    .top-category-name { font-size: 32px; font-weight: bold; color: #1e293b; margin: 10px 0; text-transform: uppercase; }
     .top-category-confidence { font-size: 18px; color: #3b82f6; font-weight: 600; }
     .confidence-bar {
         height: 8px;
@@ -138,6 +129,27 @@ st.markdown("""
         border-top: 1px solid #e2e8f0;
         margin-top: 40px;
     }
+    .history-stat-card {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        text-align: center;
+    }
+    .history-stat-value { font-size: 24px; font-weight: bold; color: #1e293b; }
+    .history-stat-label { font-size: 12px; color: #94a3b8; }
+    .history-stat-sub { font-size: 11px; color: #94a3b8; }
+    .history-item {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #3b82f6;
+        margin-bottom: 10px;
+    }
+    .history-item-category { font-weight: 600; margin-bottom: 5px; }
+    .history-item-text { font-size: 14px; color: #475569; margin-bottom: 5px; }
+    .history-item-meta { font-size: 12px; color: #94a3b8; }
+    .stCaption { font-size: 13px; color: #64748b; margin-bottom: 5px; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -270,7 +282,7 @@ st.markdown("""
 tab1, tab2, tab3 = st.tabs(["🤖 Classifier", "📊 Session History", "ℹ️ About"])
 
 # ============================================================================
-# TAB 1: CLASSIFIER - FIXED INPUT HANDLING
+# TAB 1: CLASSIFIER
 # ============================================================================
 with tab1:
     col_left, col_right = st.columns([1, 1], gap="large")
@@ -286,10 +298,7 @@ with tab1:
         
         tab_text, tab_pdf = st.tabs(["📝 Text Input", "📤 PDF Upload"])
         
-        # Initialize
-        input_text = ""
         extracted_text = ""
-        uploaded_file = None
         
         with tab_text:
             st.caption("Direct Text Entry")
@@ -311,12 +320,9 @@ with tab1:
                 else:
                     st.error("❌ Could not extract text from PDF")
         
-        # Analyze button
         if st.button("🔍 Analyze Text", use_container_width=True, key="analyze_btn"):
-            # Get text from text area
             text_from_area = st.session_state.get("text_input_area", "")
             
-            # Determine which input to use (text area takes priority)
             if text_from_area and text_from_area.strip():
                 final_text = text_from_area
             elif extracted_text and extracted_text.strip():
@@ -335,7 +341,6 @@ with tab1:
                         device
                     )
                 
-                # Store results
                 st.session_state.last_prediction = {
                     'class': pred_class,
                     'category_name': pred_name,
@@ -347,9 +352,7 @@ with tab1:
                     'timestamp': datetime.now().strftime("%I:%M %p")
                 }
                 
-                # Add to history
                 st.session_state.history.append(st.session_state.last_prediction)
-                
                 st.success("✅ Analysis complete!")
                 st.rerun()
     
@@ -369,7 +372,7 @@ with tab1:
                 </div>
             """, unsafe_allow_html=True)
             
-            # Top Classification Card
+            # TOP CLASSIFICATION - EXACT MATCH
             color = CATEGORY_COLORS.get(prediction['category_name'], '#3b82f6')
             st.markdown(f"""
                 <div class="top-category-card" style="border-color: {color};">
@@ -379,7 +382,7 @@ with tab1:
                 </div>
             """, unsafe_allow_html=True)
             
-            # Text statistics
+            # Text statistics - EXACT MATCH
             st.markdown(f"""
                 <div style="display: flex; gap: 20px; margin-bottom: 20px;">
                     <div><strong>{prediction['text_length']:,}</strong> Characters</div>
@@ -388,7 +391,7 @@ with tab1:
                 <div style="font-size: 13px; color: #10b981; margin-bottom: 15px;">✅ Text length is optimal for classification</div>
             """, unsafe_allow_html=True)
             
-            # Confidence Scores
+            # Confidence Scores - EXACT MATCH
             st.subheader("Confidence Scores")
             
             probs_list = [(CATEGORY_NAMES.get(i, f"Class {i}"), float(p)) for i, p in enumerate(prediction['probs'][0].tolist())]
@@ -408,7 +411,7 @@ with tab1:
                     </div>
                 """, unsafe_allow_html=True)
             
-            # Action buttons
+            # Export and Clear buttons - EXACT MATCH
             col_exp, col_clr = st.columns(2)
             with col_exp:
                 if st.button("📤 Export", use_container_width=True):
