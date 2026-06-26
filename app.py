@@ -1,7 +1,3 @@
-# ============================================================================
-# DEBUG VERSION - Find Correct Category Mapping
-# ============================================================================
-
 import streamlit as st
 import torch
 import torch.nn as nn
@@ -24,24 +20,24 @@ st.set_page_config(
 )
 
 # ============================================================================
-# TEMPORARY: Use generic names to find the correct mapping
+# CATEGORY NAMES - CORRECT MAPPING
 # ============================================================================
 CATEGORY_NAMES = {
-    0: "Class 0",
-    1: "Class 1",
-    2: "Class 2",
-    3: "Class 3",
-    4: "Class 4",
-    5: "Class 5"
+    0: "Politics",
+    1: "Technology",
+    2: "Economics",
+    3: "Health",
+    4: "Sports",
+    5: "Environment"
 }
 
 CATEGORY_COLORS = {
-    "Class 0": "#3b82f6",
-    "Class 1": "#8b5cf6",
-    "Class 2": "#10b981",
-    "Class 3": "#ef4444",
-    "Class 4": "#f59e0b",
-    "Class 5": "#14b8a6"
+    "Politics": "#3b82f6",
+    "Technology": "#8b5cf6",
+    "Economics": "#10b981",
+    "Health": "#ef4444",
+    "Sports": "#f59e0b",
+    "Environment": "#14b8a6"
 }
 
 # ============================================================================
@@ -141,28 +137,6 @@ st.markdown("""
         font-size: 12px;
         border-top: 1px solid #e2e8f0;
         margin-top: 40px;
-    }
-    .debug-box {
-        background: #f8fafc;
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-        margin-top: 15px;
-    }
-    .debug-class {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 4px;
-        margin: 2px;
-        font-family: monospace;
-        font-size: 14px;
-    }
-    .debug-highlight {
-        background: #fef3c7;
-        border: 2px solid #f59e0b;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-weight: bold;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -265,10 +239,7 @@ def classify_text(text, model, tokenizer, device):
     pred_conf = probs[0, pred_class].item()
     pred_name = CATEGORY_NAMES.get(pred_class, f"Class {pred_class}")
     
-    # Return all probabilities for debugging
-    all_probs = {i: p.item() for i, p in enumerate(probs[0])}
-    
-    return pred_class, pred_name, pred_conf, probs, all_probs
+    return pred_class, pred_name, pred_conf, probs
 
 # ============================================================================
 # SESSION STATE INITIALIZATION
@@ -288,228 +259,340 @@ model, tokenizer, device = load_model()
 # ============================================================================
 st.markdown("""
     <div class="header-container">
-        <div class="header-title">🔍 Category Mapping Debug Tool</div>
-        <div class="header-subtitle">FIND THE CORRECT CATEGORY ORDER</div>
+        <div class="header-title">🗞️ Cambodian News Classifier</div>
+        <div class="header-subtitle">MULTI-CLASS AI ANALYSIS</div>
     </div>
 """, unsafe_allow_html=True)
 
 # ============================================================================
-# DEBUG INFO
+# TABS
 # ============================================================================
-st.info("""
-**📋 How to use this debug tool:**
-
-1. Paste a **Politics** article in the text area below
-2. Click "Analyze Text" 
-3. Look at the **Class Probabilities** section
-4. Note which Class (0-5) gets the highest probability
-5. Update the `CATEGORY_NAMES` dictionary with the correct mapping
-6. Test with articles from other categories (Technology, Economics, Health, Sports, Environment)
-""")
+tab1, tab2, tab3 = st.tabs(["🤖 Classifier", "📊 Session History", "ℹ️ About"])
 
 # ============================================================================
-# MAIN CLASSIFIER PAGE
+# TAB 1: CLASSIFIER
 # ============================================================================
-col_left, col_right = st.columns([1, 1], gap="large")
-
-# LEFT COLUMN - INPUT SECTION
-with col_left:
-    st.markdown("""
-        <div class="input-section">
-            <div class="input-label">📄 Input Section</div>
-            <div class="input-sublabel">Paste news text for classification</div>
-        </div>
-    """, unsafe_allow_html=True)
+with tab1:
+    col_left, col_right = st.columns([1, 1], gap="large")
     
-    text_input = st.text_area(
-        "Direct Text Entry",
-        height=300,
-        placeholder="Paste your news article here ...",
-        label_visibility="collapsed",
-        key="text_input_area"
-    )
-    
-    if st.button("🔍 Analyze Text", use_container_width=True, key="analyze_btn"):
-        text_input = st.session_state.get("text_input_area", "")
-        
-        if not text_input or not text_input.strip():
-            st.error("❌ Please enter a news article to analyze")
-        else:
-            with st.spinner("⏳ Analyzing article..."):
-                pred_class, pred_name, pred_conf, probs, all_probs = classify_text(
-                    text_input,
-                    model,
-                    tokenizer,
-                    device
-                )
-            
-            st.session_state.last_prediction = {
-                'class': pred_class,
-                'category_name': pred_name,
-                'confidence': pred_conf,
-                'probs': probs,
-                'all_probs': all_probs,
-                'text': text_input,
-                'text_length': len(text_input),
-                'word_count': len(text_input.split()),
-                'timestamp': datetime.now().strftime("%I:%M %p")
-            }
-            
-            st.session_state.history.append(st.session_state.last_prediction)
-            st.success("✅ Analysis complete!")
-            st.rerun()
-
-# RIGHT COLUMN - RESULTS PANEL
-with col_right:
-    st.markdown("""
-        <div class="results-panel">
-            <div class="results-title">📊 Results Panel</div>
-    """, unsafe_allow_html=True)
-    
-    if st.session_state.last_prediction:
-        prediction = st.session_state.last_prediction
-        
-        # Top Classification Card
-        color = CATEGORY_COLORS.get(prediction['category_name'], '#3b82f6')
-        st.markdown(f"""
-            <div class="top-category-card" style="border-color: {color};">
-                <div class="top-category-label">TOP CLASSIFICATION</div>
-                <div class="top-category-name" style="color: {color};">{prediction['category_name']}</div>
-                <div class="top-category-confidence">{prediction['confidence']:.1%}</div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Text statistics
-        st.markdown(f"""
-            <div style="display: flex; gap: 20px; margin-bottom: 20px;">
-                <div><strong>{prediction['text_length']:,}</strong> Characters</div>
-                <div><strong>{prediction['word_count']:,}</strong> words</div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # ============================================================
-        # DEBUG: Show all class probabilities
-        # ============================================================
+    # LEFT COLUMN - INPUT SECTION
+    with col_left:
         st.markdown("""
-            <div class="debug-box">
-                <h4>🔍 Debug: Class Probabilities</h4>
-                <p style="font-size: 13px; color: #64748b;">
-                    The highest probability shows which class the model thinks this article belongs to.
-                    <br><strong>Note which Class (0-5) gets the highest score for each category.</strong>
-                </p>
+            <div class="input-section">
+                <div class="input-label">📄 Input Section</div>
+                <div class="input-sublabel">Paste news text for classification</div>
+            </div>
         """, unsafe_allow_html=True)
         
-        # Create a DataFrame for better display
-        debug_data = []
-        for class_idx, prob in prediction['all_probs'].items():
-            is_top = class_idx == prediction['class']
-            debug_data.append({
-                'Class': f"Class {class_idx}",
-                'Probability': f"{prob:.1%}",
-                'Bar': prob,
-                'Top': '⭐' if is_top else ''
-            })
+        tab_text, tab_pdf = st.tabs(["📝 Text Input", "📤 PDF Upload"])
         
-        # Sort by probability descending
-        debug_data.sort(key=lambda x: x['Bar'], reverse=True)
+        input_text = ""
         
-        for item in debug_data:
-            bar_color = '#f59e0b' if item['Top'] else '#94a3b8'
+        with tab_text:
+            st.caption("Direct Text Entry")
+            st.caption("Perfect for copied articles or short texts")
+            text_input = st.text_area(
+                "Direct Text Entry",
+                height=300,
+                placeholder="Paste your news article here ...\n\nThe government announced new economic policies today ...",
+                label_visibility="collapsed",
+                key="text_input_area"
+            )
+            if text_input and text_input.strip():
+                input_text = text_input
+        
+        with tab_pdf:
+            uploaded_file = st.file_uploader("Choose a PDF file", type="pdf", key="pdf_uploader")
+            if uploaded_file is not None:
+                extracted_text = extract_text_from_pdf(uploaded_file)
+                if extracted_text:
+                    st.success(f"✅ Extracted {len(extracted_text)} characters from PDF")
+                    input_text = extracted_text
+                else:
+                    st.error("❌ Could not extract text from PDF")
+                    input_text = ""
+        
+        if st.button("🔍 Analyze Text", use_container_width=True, key="analyze_btn"):
+            text_input = st.session_state.get("text_input_area", "")
+            final_text = ""
+            
+            if text_input and text_input.strip():
+                final_text = text_input
+            elif 'uploaded_file' in locals() and uploaded_file is not None and extracted_text:
+                final_text = extracted_text
+            
+            if not final_text or not final_text.strip():
+                st.error("❌ Please enter a news article to analyze")
+            else:
+                with st.spinner("⏳ Analyzing article..."):
+                    pred_class, pred_name, pred_conf, probs = classify_text(
+                        final_text,
+                        model,
+                        tokenizer,
+                        device
+                    )
+                
+                st.session_state.last_prediction = {
+                    'class': pred_class,
+                    'category_name': pred_name,
+                    'confidence': pred_conf,
+                    'probs': probs,
+                    'text': final_text,
+                    'text_length': len(final_text),
+                    'word_count': len(final_text.split()),
+                    'timestamp': datetime.now().strftime("%I:%M %p")
+                }
+                
+                st.session_state.history.append(st.session_state.last_prediction)
+                st.success("✅ Analysis complete!")
+                st.rerun()
+    
+    # RIGHT COLUMN - RESULTS PANEL
+    with col_right:
+        st.markdown("""
+            <div class="results-panel">
+                <div class="results-title">📊 Results Panel</div>
+        """, unsafe_allow_html=True)
+        
+        if st.session_state.last_prediction:
+            prediction = st.session_state.last_prediction
+            
+            st.markdown("""
+                <div class="results-subtitle">
+                    Enter a news article on the left and click "Analyze Text" to see classification results, confidence scores, and detailed analytics.
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Top Classification Card
+            color = CATEGORY_COLORS.get(prediction['category_name'], '#3b82f6')
             st.markdown(f"""
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                    <span style="min-width: 80px; font-weight: {'bold' if item['Top'] else 'normal'};">
-                        {item['Class']} {item['Top']}
-                    </span>
-                    <span style="min-width: 60px;">{item['Probability']}</span>
-                    <div style="flex: 1;">
+                <div class="top-category-card" style="border-color: {color};">
+                    <div class="top-category-label">TOP CLASSIFICATION</div>
+                    <div class="top-category-name" style="color: {color};">{prediction['category_name']}</div>
+                    <div class="top-category-confidence">{prediction['confidence']:.1%}</div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Text statistics
+            st.markdown(f"""
+                <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                    <div><strong>{prediction['text_length']:,}</strong> Characters</div>
+                    <div><strong>{prediction['word_count']:,}</strong> words</div>
+                </div>
+                <div style="font-size: 13px; color: #10b981; margin-bottom: 15px;">✅ Text length is optimal for classification</div>
+            """, unsafe_allow_html=True)
+            
+            # Confidence Scores
+            st.subheader("Confidence Scores")
+            
+            probs_list = [(CATEGORY_NAMES.get(i, f"Class {i}"), float(p)) for i, p in enumerate(prediction['probs'][0].tolist())]
+            probs_list.sort(key=lambda x: x[1], reverse=True)
+            
+            for name, prob in probs_list:
+                color = CATEGORY_COLORS.get(name, '#3b82f6')
+                st.markdown(f"""
+                    <div style="margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                            <span>{name}</span>
+                            <span style="font-weight: 600;">{prob:.1%}</span>
+                        </div>
                         <div class="confidence-bar">
-                            <div class="confidence-bar-fill" style="width: {item['Bar']*100}%; background: {bar_color};"></div>
+                            <div class="confidence-bar-fill" style="width: {prob*100}%; background: {color};"></div>
                         </div>
                     </div>
+                """, unsafe_allow_html=True)
+            
+            # Action buttons
+            col_exp, col_clr = st.columns(2)
+            with col_exp:
+                if st.button("📤 Export", use_container_width=True):
+                    export_data = {
+                        'Category': prediction['category_name'],
+                        'Confidence': prediction['confidence'],
+                        'Text': prediction['text'][:500] + "...",
+                        'Characters': prediction['text_length'],
+                        'Words': prediction['word_count'],
+                        'Timestamp': prediction['timestamp']
+                    }
+                    df = pd.DataFrame([export_data])
+                    csv = df.to_csv(index=False)
+                    st.download_button(
+                        label="📥 Download CSV",
+                        data=csv,
+                        file_name=f"classification_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
+            
+            with col_clr:
+                if st.button("🗑️ Clear", use_container_width=True):
+                    st.session_state.last_prediction = None
+                    st.rerun()
+            
+        else:
+            st.markdown("""
+                <div class="empty-state">
+                    <div class="empty-icon">📈</div>
+                    <div style="font-weight: 600; margin-bottom: 10px;">Results Panel</div>
+                    <div>Enter a news article on the left and click "Analyze Text" to see classification results, confidence scores, and detailed analytics.</div>
+                    <div class="features-list">
+                        <div class="feature-item"><span class="feature-icon">✓</span> Supports news text input</div>
+                        <div class="feature-item"><span class="feature-icon">✓</span> 6-category classification model</div>
+                        <div class="feature-item"><span class="feature-icon">✓</span> Confidence scores for all categories</div>
+                    </div>
                 </div>
             """, unsafe_allow_html=True)
         
-        st.markdown("""
-            </div>
-            <div style="margin-top: 10px; padding: 10px; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
-                <strong>💡 Next Step:</strong>
-                <br>If this was a <strong>Politics</strong> article and <strong>Class X</strong> got the highest score,
-                then update your <code>CATEGORY_NAMES</code> with: <br>
-                <code style="display: block; margin-top: 5px; background: #1e293b; color: #e2e8f0; padding: 8px; border-radius: 4px;">
-                CATEGORY_NAMES = {{<br>
-                    X: "Politics",  # ← X is the class number you see above<br>
-                    ...<br>
-                }}
-                </code>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Confidence Scores for all categories
-        st.subheader("All Category Probabilities")
-        
-        probs_list = [(CATEGORY_NAMES.get(i, f"Class {i}"), float(p)) for i, p in enumerate(prediction['probs'][0].tolist())]
-        probs_list.sort(key=lambda x: x[1], reverse=True)
-        
-        for name, prob in probs_list:
-            color = CATEGORY_COLORS.get(name, '#3b82f6')
-            st.markdown(f"""
-                <div style="margin-bottom: 8px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                        <span>{name}</span>
-                        <span style="font-weight: 600;">{prob:.1%}</span>
-                    </div>
-                    <div class="confidence-bar">
-                        <div class="confidence-bar-fill" style="width: {prob*100}%; background: {color};"></div>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-        
-    else:
-        st.markdown("""
-            <div class="empty-state">
-                <div class="empty-icon">📈</div>
-                <div style="font-weight: 600; margin-bottom: 10px;">Results Panel</div>
-                <div>Enter a news article and click "Analyze Text" to see the class probabilities.</div>
-            </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ============================================================================
-# INSTRUCTIONS
+# TAB 2: SESSION HISTORY
 # ============================================================================
-st.markdown("""
-    <div style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-        <h4>📋 How to Find the Correct Mapping</h4>
-        <ol style="line-height: 2;">
-            <li>Paste a <strong>Politics</strong> article and click "Analyze Text"</li>
-            <li>Look at the <strong>Debug: Class Probabilities</strong> section</li>
-            <li>Note which <strong>Class (0-5)</strong> gets the highest score</li>
-            <li>That class number = Politics in your model</li>
-            <li>Repeat for <strong>Technology, Economics, Health, Sports, Environment</strong></li>
-            <li>Update <code>CATEGORY_NAMES</code> with the correct mapping</li>
-        </ol>
-        <div style="margin-top: 10px; padding: 10px; background: #dbeafe; border-radius: 8px;">
-            <strong>Example mapping (after testing):</strong><br>
-            <code>
-            CATEGORY_NAMES = {<br>
-                0: "Politics",  # ← Highest score for Politics articles<br>
-                1: "Technology",  # ← Highest score for Technology articles<br>
-                2: "Economics",  # ← Highest score for Economics articles<br>
-                3: "Health",  # ← Highest score for Health articles<br>
-                4: "Sports",  # ← Highest score for Sports articles<br>
-                5: "Environment"  # ← Highest score for Environment articles<br>
-            }
-            </code>
+with tab2:
+    st.markdown("""
+        <div style="margin-bottom: 20px;">
+            <h2>📊 Session History</h2>
+            <p style="color: #64748b;">All classification results from this session</p>
         </div>
-    </div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+    
+    if st.session_state.history:
+        total_articles = len(st.session_state.history)
+        categories_used = len(set(h['category_name'] for h in st.session_state.history))
+        avg_confidence = sum(h['confidence'] for h in st.session_state.history) / total_articles
+        top_category = max(set(h['category_name'] for h in st.session_state.history), 
+                          key=lambda x: sum(1 for h in st.session_state.history if h['category_name'] == x))
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.markdown(f"""
+                <div class="history-stat-card">
+                    <div class="history-stat-value">{total_articles}</div>
+                    <div class="history-stat-label">TOTAL ARTICLES</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with col2:
+            st.markdown(f"""
+                <div class="history-stat-card">
+                    <div class="history-stat-value">{categories_used}/6</div>
+                    <div class="history-stat-label">CATEGORIES USED</div>
+                    <div class="history-stat-sub">of 6 total</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with col3:
+            st.markdown(f"""
+                <div class="history-stat-card">
+                    <div class="history-stat-value">{avg_confidence:.1%}</div>
+                    <div class="history-stat-label">AVG CONFIDENCE</div>
+                    <div class="history-stat-sub">across session</div>
+                </div>
+            """, unsafe_allow_html=True)
+        with col4:
+            st.markdown(f"""
+                <div class="history-stat-card">
+                    <div class="history-stat-value" style="color: {CATEGORY_COLORS.get(top_category, '#3b82f6')};">{top_category}</div>
+                    <div class="history-stat-label">TOP CATEGORY</div>
+                    <div class="history-stat-sub">most frequent</div>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        col_search, col_filter, col_sort = st.columns([2, 1, 1])
+        with col_search:
+            search_query = st.text_input("🔍 Search articles...", placeholder="Search by category or text...")
+        with col_filter:
+            filter_category = st.selectbox("Filter by category", ["All"] + list(CATEGORY_NAMES.values()))
+        with col_sort:
+            sort_order = st.selectbox("Sort by", ["Most Recent", "Most Confident", "Oldest"])
+        
+        filtered_history = st.session_state.history.copy()
+        
+        if search_query:
+            filtered_history = [h for h in filtered_history if 
+                              search_query.lower() in h['category_name'].lower() or 
+                              search_query.lower() in h['text'][:100].lower()]
+        
+        if filter_category != "All":
+            filtered_history = [h for h in filtered_history if h['category_name'] == filter_category]
+        
+        if sort_order == "Most Recent":
+            filtered_history = filtered_history[::-1]
+        elif sort_order == "Most Confident":
+            filtered_history = sorted(filtered_history, key=lambda x: x['confidence'], reverse=True)
+        
+        st.markdown(f"### {len(filtered_history)} articles")
+        
+        for item in filtered_history:
+            color = CATEGORY_COLORS.get(item['category_name'], '#3b82f6')
+            st.markdown(f"""
+                <div class="history-item" style="border-left-color: {color};">
+                    <div class="history-item-category" style="color: {color};">
+                        {item['category_name']}
+                    </div>
+                    <div class="history-item-text">
+                        {item['text'][:150]}...
+                    </div>
+                    <div class="history-item-meta">
+                        {item['confidence']:.1%} confidence • {item['timestamp']}
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+        
+        if st.button("🗑️ Clear All History", use_container_width=True):
+            st.session_state.history = []
+            st.rerun()
+            
+    else:
+        st.info("No articles classified yet. Go to the Classifier tab to get started!")
+
+# ============================================================================
+# TAB 3: ABOUT
+# ============================================================================
+with tab3:
+    st.markdown("""
+        <div style="margin-bottom: 20px;">
+            <h2>ℹ️ About This App</h2>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+        ### 🗞️ Cambodian News Classifier
+        
+        This application uses a fine-tuned RoBERTa model to classify Cambodian news articles into 6 categories:
+        
+        - **Politics** - Government, elections, policy
+        - **Technology** - Tech news, digital transformation
+        - **Economics** - Business, finance, trade
+        - **Health** - Healthcare, public health
+        - **Sports** - Athletics, competitions
+        - **Environment** - Climate, conservation
+        
+        ### 📊 How It Works
+        
+        1. **Input** - Paste text or upload a PDF
+        2. **Analyze** - Click "Analyze Text" to classify
+        3. **Results** - View category and confidence scores
+        4. **History** - Track all classifications
+        
+        ### 🔧 Technical Details
+        
+        - **Model:** RoBERTa (fine-tuned)
+        - **Framework:** PyTorch + Transformers
+        - **Deployment:** Streamlit Cloud
+        - **Model Hosting:** HuggingFace Hub
+        
+        ### 👨‍💻 Developer
+        
+        Built with ❤️ for Cambodian news analysis.
+    """)
 
 # ============================================================================
 # FOOTER
 # ============================================================================
 st.markdown("""
     <div class="footer">
-        <p>🔍 Debug Tool | Cambodia News Classification System</p>
+        <p>Made with ❤️ | Cambodia News Classification System</p>
+        <p>Powered by RoBERTa + Streamlit</p>
     </div>
 """, unsafe_allow_html=True)
