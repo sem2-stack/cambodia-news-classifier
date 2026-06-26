@@ -1,12 +1,12 @@
-# FORCE REBUILD - v2
 import streamlit as st
 import torch
 import torch.nn as nn
-from transformers import AutoTokenizer, RobertaModel
+from transformers import AutoTokenizer, RobertaModel, RobertaConfig
 from huggingface_hub import hf_hub_download
 import PyPDF2
 from io import BytesIO
 import os
+import re
 
 # ============================================================================
 # PAGE CONFIGURATION
@@ -23,7 +23,7 @@ st.set_page_config(
 # ============================================================================
 CATEGORY_NAMES = {
     0: "Politics",
-    1: "Economy", 
+    1: "Economy",
     2: "Sports",
     3: "Technology",
     4: "Health",
@@ -31,35 +31,7 @@ CATEGORY_NAMES = {
 }
 
 # ============================================================================
-# CUSTOM MODEL CLASS - MATCHES YOUR SAVED ARCHITECTURE
-# ============================================================================
-class CustomRobertaForSequenceClassification(nn.Module):
-    """Custom RoBERTa model with classifier head matching the saved checkpoint"""
-    def __init__(self, base_model, num_labels=6, hidden_size=512):
-        super().__init__()
-        self.roberta = base_model
-        self.num_labels = num_labels
-        self.classifier = nn.Sequential(
-            nn.Linear(768, hidden_size),  # roberta-base has 768 dims -> 512 hidden
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.Linear(hidden_size, num_labels)  # 512 hidden -> num_labels
-        )
-    
-    def forward(self, input_ids, attention_mask=None):
-        # Get RoBERTa outputs
-        outputs = self.roberta(
-            input_ids=input_ids,
-            attention_mask=attention_mask
-        )
-        # Use pooled output (CLS token)
-        pooled_output = outputs.pooler_output
-        # Apply classifier
-        logits = self.classifier(pooled_output)
-        return type('obj', (object,), {'logits': logits})()
-
-# ============================================================================
-# CUSTOM CSS STYLING
+# CUSTOM CSS
 # ============================================================================
 st.markdown("""
     <style>
@@ -147,13 +119,33 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ============================================================================
-# LOAD MODEL
+# CUSTOM MODEL CLASS - MATCHES YOUR CHECKPOINT
+# ============================================================================
+class CustomRobertaForSequenceClassification(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.roberta = RobertaModel(config)
+        self.classifier = nn.Sequential(
+            nn.Linear(config.hidden_size, 512),  # 768 -> 512
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(512, config.num_labels)
+        )
+        self.num_labels = config.num_labels
+    
+    def forward(self, input_ids, attention_mask=None):
+        outputs = self.roberta(input_ids=input_ids, attention_mask=attention_mask)
+        pooled_output = outputs.pooler_output
+        logits = self.classifier(pooled_output)
+        return type('obj', (object,), {'logits': logits})()
+
+# ============================================================================
+# LOAD MODEL - FIXED VERSION
 # ============================================================================
 @st.cache_resource
 def load_model():
     """Load the custom RoBERTa model from HuggingFace Hub"""
     
-    # Check if model exists locally first
     model_path = "roberta_best.pt"
     if not os.path.exists(model_path):
         with st.spinner("📥 Downloading model from HuggingFace (477 MB - this may take a few minutes)..."):
@@ -171,28 +163,34 @@ def load_model():
         # Fix key names: replace 'encoder.' with 'roberta.'
         fixed_state_dict = {}
         for key, value in state_dict.items():
+            # Replace encoder. with roberta.
             if key.startswith("encoder."):
                 new_key = key.replace("encoder.", "roberta.", 1)
                 fixed_state_dict[new_key] = value
             else:
                 fixed_state_dict[key] = value
         
-        # Load the base RoBERTa model
-        tokenizer = AutoTokenizer.from_pretrained("roberta-base")
-        base_model = RobertaModel.from_pretrained("roberta-base")
-        
-        # Create custom model with 512 hidden size (matching the checkpoint)
+        # Determine number of classes
         num_labels = 6
-        model = CustomRobertaForSequenceClassification(
-            base_model, 
-            num_labels=num_labels, 
-            hidden_size=512  # This matches the checkpoint's classifier
-        )
+        for key in fixed_state_dict.keys():
+            if "out_proj.weight" in key:
+                num_labels = fixed_state_dict[key].shape[0]
+                break
         
-        # Load the state dict (strict=False to ignore mismatches)
+        # Create config
+        config = RobertaConfig.from_pretrained("roberta-base")
+        config.num_labels = num_labels
+        
+        # Create the custom model
+        model = CustomRobertaForSequenceClassification(config)
+        
+        # Load the state dict (strict=False ignores missing keys)
         model.load_state_dict(fixed_state_dict, strict=False)
         model.to(device)
         model.eval()
+        
+        # Load tokenizer
+        tokenizer = AutoTokenizer.from_pretrained("roberta-base")
         
         st.success(f"✅ Model loaded successfully with {num_labels} classes!")
     
@@ -202,7 +200,6 @@ def load_model():
 # UTILITY FUNCTIONS
 # ============================================================================
 def extract_text_from_pdf(pdf_file):
-    """Extract text from PDF file"""
     try:
         pdf_reader = PyPDF2.PdfReader(BytesIO(pdf_file.read()))
         text = ""
@@ -214,7 +211,6 @@ def extract_text_from_pdf(pdf_file):
         return None
 
 def classify_text(text, model, tokenizer, device):
-    """Classify input text and return category name"""
     inputs = tokenizer(
         text,
         return_tensors="pt",
@@ -280,7 +276,6 @@ with col_left:
         </div>
     """, unsafe_allow_html=True)
     
-    # Tabs for input method
     tab1, tab2 = st.tabs(["📝 Text Input", "📤 PDF Upload"])
     
     with tab1:
@@ -305,7 +300,6 @@ with col_left:
         else:
             input_text = ""
     
-    # Analyze button
     if st.button("🔍 Analyze Text", use_container_width=True, key="analyze_btn"):
         if input_text.strip():
             with st.spinner("⏳ Analyzing article..."):
@@ -316,7 +310,6 @@ with col_left:
                     device
                 )
             
-            # Store results in session state
             st.session_state.last_prediction = {
                 'class': pred_class,
                 'category_name': pred_name,
@@ -347,7 +340,6 @@ with col_right:
             </div>
         """, unsafe_allow_html=True)
         
-        # Metrics
         metric_col1, metric_col2 = st.columns(2)
         
         with metric_col1:
@@ -366,15 +358,13 @@ with col_right:
                 </div>
             """, unsafe_allow_html=True)
         
-        # Category probabilities
         st.subheader("Category Probabilities")
         prob_data = {
-            CATEGORY_NAMES.get(i, f"Class {i}"): float(p) 
+            CATEGORY_NAMES.get(i, f"Class {i}"): float(p)
             for i, p in enumerate(prediction['probs'][0].tolist())
         }
         st.bar_chart(prob_data)
         
-        # Text statistics
         st.subheader("📊 Text Statistics")
         stat_col1, stat_col2 = st.columns(2)
         with stat_col1:
@@ -382,7 +372,6 @@ with col_right:
         with stat_col2:
             st.metric("Words", prediction['word_count'])
         
-        # Success message
         st.success("✅ Classification Complete!")
         
     else:
