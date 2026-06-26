@@ -4,6 +4,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from huggingface_hub import hf_hub_download
 import PyPDF2
 from io import BytesIO
+import os
 
 # ============================================================================
 # PAGE CONFIGURATION
@@ -240,12 +241,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ============================================================================
-# LOAD MODEL
+# LOAD MODEL - FIXED VERSION
 # ============================================================================
 @st.cache_resource
 def load_model():
-    """Load RoBERTa model from HuggingFace Hub"""
-    import os
+    """Load RoBERTa model from HuggingFace Hub with key fixing"""
     
     # Check if model exists locally first
     model_path = "roberta_best.pt"
@@ -262,24 +262,31 @@ def load_model():
         # Load the state dict
         state_dict = torch.load(model_path, map_location="cpu")
         
-        # Fix key names: replace 'encoder.' with 'roberta.'
+        # FIX KEY NAMES: replace 'encoder.' with 'roberta.'
         new_state_dict = {}
         for key, value in state_dict.items():
             if key.startswith("encoder."):
                 new_key = key.replace("encoder.", "roberta.", 1)
                 new_state_dict[new_key] = value
+            elif key.startswith("head."):
+                # Fix head keys to classifier keys
+                if "head.0" in key:
+                    new_key = key.replace("head.0", "classifier.dense")
+                    new_state_dict[new_key] = value
+                elif "head.3" in key:
+                    new_key = key.replace("head.3", "classifier.out_proj")
+                    new_state_dict[new_key] = value
+                else:
+                    new_state_dict[key] = value
             else:
                 new_state_dict[key] = value
         
         # Get number of classes from the classifier
-        if 'classifier.out_proj.weight' in new_state_dict:
-            num_labels = new_state_dict['classifier.out_proj.weight'].shape[0]
-        elif 'head.3.weight' in new_state_dict:
-            num_labels = new_state_dict['head.3.weight'].shape[0]
-        elif 'roberta.classifier.out_proj.weight' in new_state_dict:
+        num_labels = 6  # default
+        if 'roberta.classifier.out_proj.weight' in new_state_dict:
             num_labels = new_state_dict['roberta.classifier.out_proj.weight'].shape[0]
-        else:
-            num_labels = 6  # Default
+        elif 'classifier.out_proj.weight' in new_state_dict:
+            num_labels = new_state_dict['classifier.out_proj.weight'].shape[0]
         
         # Load the model with the correct number of labels
         tokenizer = AutoTokenizer.from_pretrained("roberta-base")
