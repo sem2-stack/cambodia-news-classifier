@@ -270,7 +270,7 @@ st.markdown("""
 tab1, tab2, tab3 = st.tabs(["🤖 Classifier", "📊 Session History", "ℹ️ About"])
 
 # ============================================================================
-# TAB 1: CLASSIFIER
+# TAB 1: CLASSIFIER - FIXED INPUT HANDLING
 # ============================================================================
 with tab1:
     col_left, col_right = st.columns([1, 1], gap="large")
@@ -286,7 +286,10 @@ with tab1:
         
         tab_text, tab_pdf = st.tabs(["📝 Text Input", "📤 PDF Upload"])
         
+        # Initialize
         input_text = ""
+        extracted_text = ""
+        uploaded_file = None
         
         with tab_text:
             st.caption("Direct Text Entry")
@@ -298,8 +301,6 @@ with tab1:
                 label_visibility="collapsed",
                 key="text_input_area"
             )
-            if text_input and text_input.strip():
-                input_text = text_input
         
         with tab_pdf:
             uploaded_file = st.file_uploader("Choose a PDF file", type="pdf", key="pdf_uploader")
@@ -307,19 +308,21 @@ with tab1:
                 extracted_text = extract_text_from_pdf(uploaded_file)
                 if extracted_text:
                     st.success(f"✅ Extracted {len(extracted_text)} characters from PDF")
-                    input_text = extracted_text
                 else:
                     st.error("❌ Could not extract text from PDF")
-                    input_text = ""
         
+        # Analyze button
         if st.button("🔍 Analyze Text", use_container_width=True, key="analyze_btn"):
-            text_input = st.session_state.get("text_input_area", "")
-            final_text = ""
+            # Get text from text area
+            text_from_area = st.session_state.get("text_input_area", "")
             
-            if text_input and text_input.strip():
-                final_text = text_input
-            elif 'uploaded_file' in locals() and uploaded_file is not None and extracted_text:
+            # Determine which input to use (text area takes priority)
+            if text_from_area and text_from_area.strip():
+                final_text = text_from_area
+            elif extracted_text and extracted_text.strip():
                 final_text = extracted_text
+            else:
+                final_text = ""
             
             if not final_text or not final_text.strip():
                 st.error("❌ Please enter a news article to analyze")
@@ -332,6 +335,7 @@ with tab1:
                         device
                     )
                 
+                # Store results
                 st.session_state.last_prediction = {
                     'class': pred_class,
                     'category_name': pred_name,
@@ -343,7 +347,9 @@ with tab1:
                     'timestamp': datetime.now().strftime("%I:%M %p")
                 }
                 
+                # Add to history
                 st.session_state.history.append(st.session_state.last_prediction)
+                
                 st.success("✅ Analysis complete!")
                 st.rerun()
     
