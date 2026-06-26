@@ -1,6 +1,6 @@
 import streamlit as st
 import torch
-from transformers import RobertaTokenizer, RobertaForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from huggingface_hub import hf_hub_download
 import PyPDF2
 from io import BytesIO
@@ -245,18 +245,20 @@ st.markdown("""
 @st.cache_resource
 def load_model():
     """Load RoBERTa model from HuggingFace Hub"""
-    # ⚠️ REPLACE 'your-username' with YOUR actual HuggingFace username
-    model_path = hf_hub_download(
-        repo_id="Theara2/cambodia-news-classifier",
-        filename="roberta_best.pt"
-    )
+    with st.spinner("📥 Downloading model from HuggingFace (477 MB - this may take a few minutes)..."):
+        model_path = hf_hub_download(
+            repo_id="Theara2/cambodia-news-classifier",
+            filename="roberta_best.pt"
+        )
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
-    model = RobertaForSequenceClassification.from_pretrained("roberta-base")
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.to(device)
-    model.eval()
+    tokenizer = AutoTokenizer.from_pretrained("roberta-base")
+    model = AutoModelForSequenceClassification.from_pretrained("roberta-base")
+    
+    with st.spinner("⏳ Loading model into memory..."):
+        model.load_state_dict(torch.load(model_path, map_location=device))
+        model.to(device)
+        model.eval()
     
     return model, tokenizer, device
 
