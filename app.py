@@ -259,11 +259,27 @@ def load_model():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
     with st.spinner("⏳ Loading model into memory..."):
-        # First, load the state dict to get the number of classes
+        # Load the state dict
         state_dict = torch.load(model_path, map_location="cpu")
         
-        # Check the shape of the classifier layer
-        num_labels = state_dict['classifier.out_proj.weight'].shape[0]
+        # Fix key names: replace 'encoder.' with 'roberta.'
+        new_state_dict = {}
+        for key, value in state_dict.items():
+            if key.startswith("encoder."):
+                new_key = key.replace("encoder.", "roberta.", 1)
+                new_state_dict[new_key] = value
+            else:
+                new_state_dict[key] = value
+        
+        # Get number of classes from the classifier
+        if 'classifier.out_proj.weight' in new_state_dict:
+            num_labels = new_state_dict['classifier.out_proj.weight'].shape[0]
+        elif 'head.3.weight' in new_state_dict:
+            num_labels = new_state_dict['head.3.weight'].shape[0]
+        elif 'roberta.classifier.out_proj.weight' in new_state_dict:
+            num_labels = new_state_dict['roberta.classifier.out_proj.weight'].shape[0]
+        else:
+            num_labels = 6  # Default
         
         # Load the model with the correct number of labels
         tokenizer = AutoTokenizer.from_pretrained("roberta-base")
@@ -272,8 +288,8 @@ def load_model():
             num_labels=num_labels
         )
         
-        # Now load the state dict
-        model.load_state_dict(state_dict)
+        # Now load the fixed state dict
+        model.load_state_dict(new_state_dict, strict=False)
         model.to(device)
         model.eval()
         
