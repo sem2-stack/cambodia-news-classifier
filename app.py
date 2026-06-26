@@ -245,20 +245,39 @@ st.markdown("""
 @st.cache_resource
 def load_model():
     """Load RoBERTa model from HuggingFace Hub"""
-    with st.spinner("📥 Downloading model from HuggingFace (477 MB - this may take a few minutes)..."):
-        model_path = hf_hub_download(
-            repo_id="Theara2/cambodia-news-classifier",
-            filename="roberta_best.pt"
-        )
+    import os
+    
+    # Check if model exists locally first
+    model_path = "roberta_best.pt"
+    if not os.path.exists(model_path):
+        with st.spinner("📥 Downloading model from HuggingFace (477 MB - this may take a few minutes)..."):
+            model_path = hf_hub_download(
+                repo_id="Theara2/cambodia-news-classifier",
+                filename="roberta_best.pt"
+            )
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    tokenizer = AutoTokenizer.from_pretrained("roberta-base")
-    model = AutoModelForSequenceClassification.from_pretrained("roberta-base")
     
     with st.spinner("⏳ Loading model into memory..."):
-        model.load_state_dict(torch.load(model_path, map_location=device))
+        # First, load the state dict to get the number of classes
+        state_dict = torch.load(model_path, map_location="cpu")
+        
+        # Check the shape of the classifier layer
+        num_labels = state_dict['classifier.out_proj.weight'].shape[0]
+        
+        # Load the model with the correct number of labels
+        tokenizer = AutoTokenizer.from_pretrained("roberta-base")
+        model = AutoModelForSequenceClassification.from_pretrained(
+            "roberta-base",
+            num_labels=num_labels
+        )
+        
+        # Now load the state dict
+        model.load_state_dict(state_dict)
         model.to(device)
         model.eval()
+        
+        st.success(f"✅ Model loaded successfully with {num_labels} classes!")
     
     return model, tokenizer, device
 
